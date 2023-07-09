@@ -25,6 +25,28 @@ impl Default for MicronApp {
 impl MicronApp {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+
+
+        let mut fonts = egui::FontDefinitions::default();
+
+        // Install my own font (maybe supporting non-latin characters):
+        fonts.font_data.insert("mono".to_owned(),
+           egui::FontData::from_static(include_bytes!("../assets/FiraCode-Regular.ttf"))); // .ttf and .otf supported
+
+        fonts.font_data.insert("sans".to_owned(),
+           egui::FontData::from_static(include_bytes!("../assets/FiraCode-Regular.ttf"))); // .ttf and .otf supported
+
+        // Put my font first (highest priority):
+        fonts.families.get_mut(&egui::FontFamily::Proportional).unwrap()
+            .insert(0, "sans".to_owned());
+
+        // Put my font as last fallback for monospace:
+        fonts.families.get_mut(&egui::FontFamily::Monospace).unwrap()
+            .insert(0, "mono".to_owned());
+
+        cc.egui_ctx.set_fonts(fonts);
+
+
         if let Some(storage) = cc.storage {
             return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
         }
@@ -77,7 +99,6 @@ impl eframe::App for MicronApp {
                     }
                 }
             });
-
             if ui.button("Close all").clicked() {
                 self.open_files.clear();
             }
@@ -89,18 +110,23 @@ impl eframe::App for MicronApp {
                 .get_mut(&(self.active_file.clone()).unwrap_or_default())
             {
                 let mut text = String::from_utf8_lossy(opened_file.buffer.as_ref()).to_string();
-                if ui
-                    .add(
-                        TextEdit::multiline(&mut text)
-                            .frame(false)
-                            .margin(Vec2::new(2., 2.))
-                            .desired_width(f32::INFINITY)
-                            .code_editor(),
-                    )
-                    .changed()
-                {
-                    opened_file.buffer = text.into_bytes();
-                }
+
+                egui::ScrollArea::vertical()
+                    .auto_shrink([false, true])
+                    .show(ui, |ui| {
+                        if ui
+                            .add(
+                                TextEdit::multiline(&mut text)
+                                    .frame(false)
+                                    .margin(Vec2::new(2., 2.))
+                                    .desired_width(f32::INFINITY)
+                                    .code_editor(),
+                            )
+                            .changed()
+                        {
+                            opened_file.buffer = text.into_bytes();
+                        }
+                    });
             }
         });
     }
