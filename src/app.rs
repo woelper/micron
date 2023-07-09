@@ -1,5 +1,5 @@
 use anyhow::Result;
-use egui::TextEdit;
+use egui::{TextEdit, Vec2};
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
@@ -60,24 +60,47 @@ impl eframe::App for MicronApp {
         egui::SidePanel::left("side_panel").show(ctx, |ui| {
             let mut open_files = self.open_files.keys().collect::<Vec<_>>();
             open_files.sort();
-            for f in open_files {
-                if ui.button(format!("{}", f.display())).clicked() {
-                    self.active_file = Some(f.clone());
+
+            ui.vertical_centered_justified(|ui| {
+                for f in open_files {
+                    if ui
+                        .button(format!(
+                            "{}",
+                            f.file_name()
+                                .map(|f| f.to_string_lossy().to_string())
+                                .unwrap_or_default()
+                        ))
+                        .on_hover_text(f.display().to_string())
+                        .clicked()
+                    {
+                        self.active_file = Some(f.clone());
+                    }
                 }
+            });
+
+            if ui.button("Close all").clicked() {
+                self.open_files.clear();
             }
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             if let Some(opened_file) = self
                 .open_files
-                .get(&(self.active_file.clone()).unwrap_or_default())
+                .get_mut(&(self.active_file.clone()).unwrap_or_default())
             {
                 let mut text = String::from_utf8_lossy(opened_file.buffer.as_ref()).to_string();
-                ui.add(
-                    TextEdit::multiline(&mut text)
-                        .desired_width(f32::INFINITY)
-                        .code_editor(),
-                );
+                if ui
+                    .add(
+                        TextEdit::multiline(&mut text)
+                            .frame(false)
+                            .margin(Vec2::new(2., 2.))
+                            .desired_width(f32::INFINITY)
+                            .code_editor(),
+                    )
+                    .changed()
+                {
+                    opened_file.buffer = text.into_bytes();
+                }
             }
         });
     }
@@ -90,7 +113,7 @@ fn read_file(path: &Path) -> Result<OpenedFile> {
     let raf = RandomAccessFile::open(path)?;
 
     // read up to 512 bytes
-    let mut buf = [0; 512];
+    let mut buf = [0; 500000];
     raf.read_at(0, &mut buf)?;
     Ok(OpenedFile {
         cursor: 0,
