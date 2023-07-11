@@ -1,5 +1,5 @@
 use anyhow::Result;
-use egui::{Color32, TextEdit, Vec2};
+use egui::{Color32, TextEdit, Vec2, ScrollArea, TextStyle};
 use log::info;
 use positioned_io::{RandomAccessFile, ReadAt};
 use std::io::Read;
@@ -189,6 +189,23 @@ impl eframe::App for MicronApp {
                                 opened_file.seek().unwrap_or_default();
                             }
                         }
+
+                        // let text_style = TextStyle::Monospace;
+                        // let row_height = ui.text_style_height(&text_style);
+                        // let num_rows = text.lines().count();
+                        // ScrollArea::vertical().auto_shrink([false; 2]).show_rows(
+                        //     ui,
+                        //     row_height,
+                        //     num_rows,
+                        //     |ui, row_range| {
+                        //         for row in row_range {
+                        //             let text = format!("This is row {}/{}", row + 1, num_rows);
+                        //             ui.label(text);
+                        //         }
+                        //     },
+                        // );
+
+
 
                         egui::ScrollArea::vertical().show(ui, |ui| {
                             if ui
