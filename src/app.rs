@@ -1,7 +1,7 @@
 use anyhow::Result;
 use egui::{Color32, TextEdit, Vec2};
 use std::{
-    collections::{HashMap, BTreeSet},
+    collections::{BTreeSet, HashMap},
     path::{Path, PathBuf},
 };
 
@@ -10,6 +10,7 @@ struct Settings {
     line_numbers: bool,
     tree_view: bool,
     recent_files: BTreeSet<PathBuf>,
+    editor_font_size: f32,
 }
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -19,6 +20,7 @@ pub struct MicronApp {
     #[serde(skip)]
     open_files: HashMap<PathBuf, OpenedFile>,
     active_file: Option<PathBuf>,
+    settings: Settings,
 }
 
 impl Default for MicronApp {
@@ -26,6 +28,7 @@ impl Default for MicronApp {
         Self {
             open_files: Default::default(),
             active_file: Default::default(),
+            settings: Default::default(),
         }
     }
 }
@@ -85,11 +88,27 @@ impl eframe::App for MicronApp {
                         if let Some(p) = rfd::FileDialog::new().pick_file() {
                             if let Ok(of) = read_file(&p) {
                                 self.active_file = Some(p.clone());
+                                self.settings.recent_files.insert(p.clone());
                                 self.open_files.insert(p, of);
                             }
                         }
                         ui.close_menu();
                     }
+
+                    ui.menu_button("Recent", |ui| {
+                        for p in &self.settings.recent_files {
+                            if let Some(fname) = p.file_name() {
+                                if ui.button(fname.to_string_lossy().to_string()).clicked() {
+                                    if let Ok(of) = read_file(&p) {
+                                        self.active_file = Some(p.clone());
+                                        self.open_files.insert(p.clone(), of);
+                                    }
+
+                                    ui.close_menu();
+                                }
+                            }
+                        }
+                    });
                 });
             });
         });
