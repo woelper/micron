@@ -1,9 +1,16 @@
 use anyhow::Result;
 use egui::{Color32, TextEdit, Vec2};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, BTreeSet},
     path::{Path, PathBuf},
 };
+
+#[derive(serde::Deserialize, serde::Serialize, Default)]
+struct Settings {
+    line_numbers: bool,
+    tree_view: bool,
+    recent_files: BTreeSet<PathBuf>,
+}
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -173,7 +180,7 @@ fn read_file(path: &Path) -> Result<OpenedFile> {
     let raf = RandomAccessFile::open(path)?;
 
     // read up to 512 bytes
-    let mut buf = [0; 500000];
+    let mut buf = [0; 100];
     raf.read_at(0, &mut buf)?;
     Ok(OpenedFile {
         cursor: 0,
