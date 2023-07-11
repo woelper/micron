@@ -1,10 +1,13 @@
 use anyhow::Result;
 use egui::{Color32, TextEdit, Vec2};
+use log::info;
+use positioned_io::{RandomAccessFile, ReadAt};
+use std::io::Read;
 use std::{
     collections::{BTreeSet, HashMap},
+    fs::{metadata, File},
     path::{Path, PathBuf},
 };
-
 
 #[derive(serde::Deserialize, serde::Serialize, Default)]
 struct Settings {
@@ -158,16 +161,34 @@ impl eframe::App for MicronApp {
                             });
                         });
 
+                        let ext = opened_file
+                            .path
+                            .extension()
+                            .map(|e| e.to_string_lossy().to_string().to_lowercase())
+                            .unwrap_or_default();
+
                         let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
                             let mut layout_job = crate::syntax_highlighting::highlight(
                                 ui.ctx(),
                                 &theme,
                                 string,
-                                "rs",
+                                ext.as_str(),
                             );
                             layout_job.wrap.max_width = wrap_width;
                             ui.fonts(|f| f.layout_job(layout_job))
                         };
+
+                        if opened_file.partial {
+                            ui.label("Large file mode");
+
+                            let response = ui.add(
+                                egui::Slider::new(&mut opened_file.cursor, 0..=opened_file.len)
+                                    .logarithmic(true),
+                            );
+                            if response.changed() {
+                                opened_file.seek().unwrap_or_default();
+                            }
+                        }
 
                         egui::ScrollArea::vertical().show(ui, |ui| {
                             if ui
@@ -194,22 +215,56 @@ impl eframe::App for MicronApp {
 }
 
 fn read_file(path: &Path) -> Result<OpenedFile> {
-    use positioned_io::{RandomAccessFile, ReadAt};
-
     // open a file (note: binding does not need to be mut)
     let raf = RandomAccessFile::open(path)?;
+    let meta = metadata(path)?;
 
-    // read up to 512 bytes
-    let mut buf = [0; 100];
-    raf.read_at(0, &mut buf)?;
-    Ok(OpenedFile {
-        cursor: 0,
-        buffer: buf.to_vec(),
-    })
+    const MAX_BYTES: u64 = 5 * 1000000;
+
+    if meta.len() < MAX_BYTES.try_into()? {
+        // read up to 512 bytes
+        let mut buf = vec![];
+        File::read_to_end(&mut File::open(path)?, &mut buf)?;
+        Ok(OpenedFile {
+            cursor: 0,
+            buffer: buf,
+            partial: false,
+            path: path.into(),
+            len: meta.len(),
+        })
+    } else {
+        info!("Large file");
+        let mut buf = [0; 10000];
+        raf.read_at(0, &mut buf)?;
+        Ok(OpenedFile {
+            cursor: 0,
+            buffer: buf.to_vec(),
+            partial: true,
+            path: path.into(),
+            len: meta.len(),
+        })
+    }
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
 struct OpenedFile {
     cursor: u64,
     buffer: Vec<u8>,
+    partial: bool,
+    path: PathBuf,
+    len: u64,
+}
+
+impl OpenedFile {
+    pub fn seek(&mut self) -> Result<()> {
+        let mut buf = [0; 10000];
+
+        // let meta = metadata(path)?;
+        let raf = RandomAccessFile::open(&self.path)?;
+        raf.read_at(self.cursor, &mut buf)?;
+
+        self.buffer = buf.to_vec();
+
+        Ok(())
+    }
 }
