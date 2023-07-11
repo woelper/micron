@@ -25,7 +25,7 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="0.75277076"
-     inkscape:cx="339.41276"
+     inkscape:cx="313.50846"
      inkscape:cy="561.92406"
      inkscape:window-width="1920"
      inkscape:window-height="1011"
@@ -58,7 +58,10 @@
        id="path398"
        cx="131.80885"
        cy="117.98254"
-       r="30.106558" />
+       r="30.106558"
+       inkscape:export-filename="logo.png"
+       inkscape:export-xdpi="95.068573"
+       inkscape:export-ydpi="95.068573" />
     <circle
        style="fill:#ffcc00;stroke-width:0.0629623;stroke-dasharray:0.0629623, 0.0629623"
        id="path398-2"
