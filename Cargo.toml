@@ -1,6 +1,6 @@
 [package]
 name = "micron"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Johann Woelper <woelper@gmail.com>"]
 edition = "2021"
 rust-version = "1.70"
@@ -10,8 +10,8 @@ rust-version = "1.70"
 egui = "0.22"
 egui_tiles = {version = "0.1", optional = true}
 eframe = { version = "0.22.0", default-features = false, features = [
-    "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
-    "default_fonts", # Embed the default egui fonts.
+    # "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
+    # "default_fonts", # Embed the default egui fonts.
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
     "persistence",   # Enable restoring app state when restarting the app.
 ] }
