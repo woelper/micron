@@ -5,6 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+
 #[derive(serde::Deserialize, serde::Serialize, Default)]
 struct Settings {
     line_numbers: bool,
